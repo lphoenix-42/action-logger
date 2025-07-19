@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package actionlog.v1;
+
+option go_package = "github.com/lphoenix-42/action-logger/gen/actionlog/v1;actionlog_v1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+service ActionLogService {
+    // Запись события
+    rpc LogAction(LogActionRequest) returns (LogActionResponse);
+    // Получение событий с фильтрацией (потоковая выдача)
+    rpc GetActions(GetActionsRequest) returns (stream GetActionsResponse);
+    // Мониторинг новых событий в реальном времени
+    rpc WatchActions(WatchActionsRequest) returns (stream WatchActionsResponse);
+}
+
+message Action {
+    int64 id = 1;
+    ActionInfo info = 2;
+}
+
+message ActionInfo {
+    int64 user_id = 2;
+    ActionType action_type = 3;
+    google.protobuf.Timestamp timestamp = 4;
+    google.protobuf.Struct details = 5;
+}
+
+enum ActionType {
+    ACTION_TYPE_UNSPECIFIED = 0;
+    ACTION_TYPE_BUY = 1;
+    ACTION_TYPE_REFUND = 2;
+}
+
+message LogActionRequest {
+    ActionInfo info = 1;
+}
+
+message LogActionResponse {
+    int64 id = 1;
+}
+
+message GetActionsRequest {
+    optional int64 user_id = 1;
+    repeated ActionType action_type = 2;
+    google.protobuf.Timestamp from_timestamp = 3;
+    google.protobuf.Timestamp to_timestamp = 4;
+    repeated JsonFilter details_filters = 5;
+}
+
+message GetActionsResponse {
+    Action action = 1;
+}
+
+message JsonFilter {
+    // path в виде массива ключей: ["product", "name"]
+    repeated string path = 1;
+    string value = 2;
+}
+
+message WatchActionsRequest {}
+message WatchActionsResponse {
+    Action action = 1;
+}

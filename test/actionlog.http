@@ -1,0 +1,15 @@
+@base=http://localhost:8080/actionlog.v1.ActionLogService
+
+### Запись события
+
+POST {{base}}/LogAction
+Content-Type: application/json
+
+{
+    "info":{
+        "userId":1,
+        "actionType":"ACTION_TYPE_BUY",
+        "timestamp":"2024-01-27T15:07:56.572316900Z",
+        "details":{}
+    }
+}
