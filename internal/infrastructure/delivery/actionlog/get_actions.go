@@ -2,12 +2,10 @@ package actionlog
 
 import (
 	"context"
-	"log"
 
 	"connectrpc.com/connect"
 	actionlogv1 "github.com/lphoenix-42/action-logger/gen/actionlog/v1"
-	"google.golang.org/protobuf/types/known/structpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/lphoenix-42/action-logger/internal/infrastructure/converter"
 )
 
 func (s *Server) GetActions(
@@ -15,31 +13,16 @@ func (s *Server) GetActions(
 	req *connect.Request[actionlogv1.GetActionsRequest],
 	stream *connect.ServerStream[actionlogv1.GetActionsResponse],
 ) error {
-	log.Println("GetActions request received:", req.Msg)
+	actionSearch := converter.FromGetActionsRequestToActionsSearchModel(req.Msg)
 
-	dummy := []actionlogv1.Action{
-		{
-			Id: 1,
-			Info: &actionlogv1.ActionInfo{
-				UserId:     100,
-				ActionType: actionlogv1.ActionType_ACTION_TYPE_BUY,
-				Timestamp:  timestamppb.Now(),
-				Details:    &structpb.Struct{Fields: map[string]*structpb.Value{"item": structpb.NewStringValue("book")}},
-			},
-		},
-		{
-			Id: 2,
-			Info: &actionlogv1.ActionInfo{
-				UserId:     200,
-				ActionType: actionlogv1.ActionType_ACTION_TYPE_REFUND,
-				Timestamp:  timestamppb.Now(),
-				Details:    &structpb.Struct{Fields: map[string]*structpb.Value{"item": structpb.NewStringValue("pen")}},
-			},
-		},
+	actions, err := s.service.GetActions(ctx, actionSearch)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, err)
 	}
 
-	for _, act := range dummy {
-		if err := stream.Send(&actionlogv1.GetActionsResponse{Action: &act}); err != nil {
+	for act := range actions {
+		desc := converter.ActionFromModelToDesc(act)
+		if err := stream.Send(&actionlogv1.GetActionsResponse{Action: desc}); err != nil {
 			return err
 		}
 	}

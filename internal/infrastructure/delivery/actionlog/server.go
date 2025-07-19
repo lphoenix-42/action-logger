@@ -1,13 +1,13 @@
 package actionlog
 
-type Server struct{}
+import "github.com/lphoenix-42/action-logger/internal/service"
 
-func New() *Server {
-	return &Server{}
+type Server struct {
+	service service.ActionlogService
 }
 
-// func New(actionlogService service.ActionlogService) *Server {
-// 	return &Server{
-// 		service: actionlogService,
-// 	}
-// }
+func New(actionlogService service.ActionlogService) *Server {
+	return &Server{
+		service: actionlogService,
+	}
+}

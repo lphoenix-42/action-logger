@@ -9,6 +9,8 @@ import (
 	"github.com/lphoenix-42/action-logger/internal/config"
 	"github.com/lphoenix-42/action-logger/internal/config/env"
 	actionlogAPI "github.com/lphoenix-42/action-logger/internal/infrastructure/delivery/actionlog"
+	"github.com/lphoenix-42/action-logger/internal/service"
+	actionlogService "github.com/lphoenix-42/action-logger/internal/service/actionlog"
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -17,7 +19,8 @@ import (
 type serviceProvider struct {
 	httpConfig config.HTTPConfig
 
-	actionlogAPI *actionlogAPI.Server
+	actionlogAPI     *actionlogAPI.Server
+	actionlogService service.ActionlogService
 }
 
 func newServiceProvider() *serviceProvider {
@@ -26,10 +29,18 @@ func newServiceProvider() *serviceProvider {
 
 func (s *serviceProvider) ActionlogAPI(ctx context.Context) *actionlogAPI.Server {
 	if s.actionlogAPI == nil {
-		s.actionlogAPI = actionlogAPI.New()
+		s.actionlogAPI = actionlogAPI.New(s.ActionlogService(ctx))
 	}
 
 	return s.actionlogAPI
+}
+
+func (s *serviceProvider) ActionlogService(ctx context.Context) service.ActionlogService {
+	if s.actionlogService == nil {
+		s.actionlogService = actionlogService.New()
+	}
+
+	return s.actionlogService
 }
 
 func (a *App) initHTTPServer(ctx context.Context) error {
