@@ -2,49 +2,28 @@ package actionlog
 
 import (
 	"context"
-	"log"
-	"time"
 
 	"github.com/lphoenix-42/action-logger/internal/service/model"
 )
 
 func (s *srvc) GetActions(ctx context.Context, req *model.ActionSearch) (<-chan *model.Action, error) {
-	log.Println("GetActions request received:", req)
+	actions, err := s.repo.QueryActions(ctx, req)
+	if err != nil {
+		return nil, err
+	}
 
-	out := make(chan *model.Action)
-
+	ch := make(chan *model.Action, len(actions))
 	go func() {
-		defer close(out)
-
-		actions := []*model.Action{
-			{
-				ID: 1,
-				Info: &model.ActionInfo{
-					UserID:     100,
-					ActionType: model.ActionTypeBuy,
-					Timestamp:  time.Now(),
-					Details:    map[string]any{"item": "book"},
-				},
-			},
-			{
-				ID: 2,
-				Info: &model.ActionInfo{
-					UserID:     200,
-					ActionType: model.ActionTypeRefund,
-					Timestamp:  time.Now(),
-					Details:    map[string]any{"item": "pen"},
-				},
-			},
-		}
-
+		defer close(ch)
+		count := 0
 		for _, action := range actions {
-			select {
-			case <-ctx.Done():
-				return
-			case out <- action:
+			if count >= 100 {
+				break
 			}
+			ch <- action
+			count++
 		}
 	}()
 
-	return out, nil
+	return ch, nil
 }

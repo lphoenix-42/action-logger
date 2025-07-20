@@ -7,5 +7,5 @@ import (
 )
 
 func (s *srvc) LogAction(ctx context.Context, info *model.ActionInfo) (int64, error) {
-	return 454, nil
+	return s.repo.InsertAction(ctx, info)
 }

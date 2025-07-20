@@ -2,15 +2,18 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"time"
+
+	"net/http"
 
 	"connectrpc.com/connect"
 	"github.com/lphoenix-42/action-logger/gen/actionlog/v1"
 	"github.com/lphoenix-42/action-logger/gen/actionlog/v1/actionlog_v1connect"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"net/http"
 )
 
 func main() {
@@ -42,14 +45,21 @@ func main() {
 
 	// --- 2. GetActions (stream)
 	fmt.Println("\nStreaming GetActions...")
-	streamReq := connect.NewRequest(&actionlog_v1.GetActionsRequest{})
+	streamReq := connect.NewRequest(&actionlog_v1.GetActionsRequest{
+		DetailsFilters: []*actionlog_v1.JsonFilter{
+			{
+				Path:  []string{"catalog", "item"},
+				Value: "Notebook",
+			},
+		},
+	})
 	stream, err := client.GetActions(ctx, streamReq)
 	if err != nil {
 		log.Fatalf("GetActions error: %v", err)
 	}
 	for stream.Receive() {
 		resp := stream.Msg()
-		fmt.Printf("GetActions => Action ID: %d, User: %d\n", resp.Action.Id, resp.Action.Info.UserId)
+		PrintAction(resp.Action)
 	}
 	if err := stream.Err(); err != nil {
 		log.Fatalf("Stream receive error: %v", err)
@@ -63,9 +73,33 @@ func main() {
 	}
 	for watchStream.Receive() {
 		resp := watchStream.Msg()
-		fmt.Printf("Watch => Action ID: %d, Details: %v\n", resp.Action.Id, resp.Action.Info.Details.AsMap())
+		PrintAction(resp.Action)
 	}
 	if err := watchStream.Err(); err != nil {
 		log.Fatalf("Watch stream error: %v", err)
 	}
+}
+
+func PrintAction(act *actionlog_v1.Action) {
+	if act == nil || act.Info == nil {
+		fmt.Println("Empty action or missing info")
+		return
+	}
+
+	timestamp := "nil"
+	if act.Info.Timestamp != nil {
+		timestamp = act.Info.Timestamp.AsTime().Format(time.RFC3339)
+	}
+
+	details := "{}"
+	if act.Info.Details != nil {
+		if b, err := json.MarshalIndent(act.Info.Details.AsMap(), "", "  "); err == nil {
+			details = string(b)
+		}
+	}
+
+	fmt.Printf(`Action id: %d, user: %d, type: %s, timestamp: %s
+Details: %s
+
+`, act.Id, act.Info.UserId, act.Info.ActionType.String(), timestamp, details)
 }

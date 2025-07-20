@@ -5,12 +5,16 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/lphoenix-42/action-logger/gen/actionlog/v1/actionlog_v1connect"
 	"github.com/lphoenix-42/action-logger/internal/config"
 	"github.com/lphoenix-42/action-logger/internal/config/env"
 	actionlogAPI "github.com/lphoenix-42/action-logger/internal/infrastructure/delivery/actionlog"
+	"github.com/lphoenix-42/action-logger/internal/infrastructure/repository"
+	actionlogRepositoryPg "github.com/lphoenix-42/action-logger/internal/infrastructure/repository/actionlog/pg"
 	"github.com/lphoenix-42/action-logger/internal/service"
 	actionlogService "github.com/lphoenix-42/action-logger/internal/service/actionlog"
+	"github.com/lphoenix-42/action-logger/pkg/closer"
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -18,9 +22,13 @@ import (
 
 type serviceProvider struct {
 	httpConfig config.HTTPConfig
+	pgConfig   config.PGConfig
 
-	actionlogAPI     *actionlogAPI.Server
-	actionlogService service.ActionlogService
+	actionlogAPI        *actionlogAPI.Server
+	actionlogService    service.ActionlogService
+	actionlogRepository repository.ActionlogRepository
+
+	pgConn *pgxpool.Pool
 }
 
 func newServiceProvider() *serviceProvider {
@@ -37,10 +45,42 @@ func (s *serviceProvider) ActionlogAPI(ctx context.Context) *actionlogAPI.Server
 
 func (s *serviceProvider) ActionlogService(ctx context.Context) service.ActionlogService {
 	if s.actionlogService == nil {
-		s.actionlogService = actionlogService.New()
+		s.actionlogService = actionlogService.New(s.ActionlogRepository(ctx))
 	}
 
 	return s.actionlogService
+}
+
+func (s *serviceProvider) ActionlogRepository(ctx context.Context) repository.ActionlogRepository {
+	if s.actionlogRepository == nil {
+		s.actionlogRepository = actionlogRepositoryPg.New(s.PGConn(ctx))
+	}
+
+	return s.actionlogRepository
+}
+
+func (s *serviceProvider) PGConn(ctx context.Context) *pgxpool.Pool {
+	if s.pgConn == nil {
+		pool, err := pgxpool.New(ctx, s.PGConfig().DSN())
+		if err != nil {
+			log.Fatalf("failed to connect to database: %v", err)
+		}
+
+		err = pool.Ping(ctx)
+		if err != nil {
+			log.Fatalf("ping error: %s", err.Error())
+		}
+
+		closer.Add(func() error {
+			pool.Close()
+			return nil
+		})
+
+		s.pgConn = pool
+	}
+
+	return s.pgConn
+
 }
 
 func (a *App) initHTTPServer(ctx context.Context) error {
@@ -79,4 +119,17 @@ func (s *serviceProvider) HTTPConfig() config.HTTPConfig {
 	}
 
 	return s.httpConfig
+}
+
+func (s *serviceProvider) PGConfig() config.PGConfig {
+	if s.pgConfig == nil {
+		cfg, err := env.NewPGConfig()
+		if err != nil {
+			log.Fatalf("failed to get pg config: %s", err.Error())
+		}
+
+		s.pgConfig = cfg
+	}
+
+	return s.pgConfig
 }

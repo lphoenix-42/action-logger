@@ -7,9 +7,14 @@ Content-Type: application/json
 
 {
     "info":{
-        "userId":1,
+        "userId":42,
         "actionType":"ACTION_TYPE_BUY",
         "timestamp":"2024-01-27T15:07:56.572316900Z",
-        "details":{}
+        "details":{
+            "catalog":{
+                "item": "Notebook"
+            },
+            "discount": true
+        }
     }
 }

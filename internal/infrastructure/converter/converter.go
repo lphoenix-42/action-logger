@@ -1,9 +1,11 @@
 package converter
 
 import (
+	"encoding/json"
 	"time"
 
 	actionlogv1 "github.com/lphoenix-42/action-logger/gen/actionlog/v1"
+	"github.com/lphoenix-42/action-logger/internal/infrastructure/repository/actionlog/pg/schema"
 	"github.com/lphoenix-42/action-logger/internal/service/model"
 
 	"google.golang.org/protobuf/types/known/structpb"
@@ -76,4 +78,36 @@ func toModelActionTypes(types []actionlogv1.ActionType) []model.ActionType {
 		result = append(result, model.ActionType(t))
 	}
 	return result
+}
+
+func ActionFromSchemaToModel(action *schema.ActionSchema) (*model.Action, error) {
+	info, err := ActionInfoFromSchemaToModel(action)
+
+	if err != nil {
+		return nil, err
+	}
+	return &model.Action{
+		ID:   action.ID,
+		Info: info,
+	}, nil
+}
+
+func ActionInfoFromSchemaToModel(action *schema.ActionSchema) (*model.ActionInfo, error) {
+	details, err := RawMessageToMap(action.Details)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.ActionInfo{
+		UserID:     action.UserID,
+		ActionType: model.ActionType(action.ActionType),
+		Timestamp:  action.Timestamp,
+		Details:    details,
+	}, nil
+}
+
+func RawMessageToMap(raw json.RawMessage) (map[string]any, error) {
+	var result map[string]any
+	err := json.Unmarshal(raw, &result)
+	return result, err
 }

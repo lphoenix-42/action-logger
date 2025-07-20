@@ -2,34 +2,34 @@ package actionlog
 
 import (
 	"context"
-	"log"
-	"time"
+	"fmt"
 
 	"github.com/lphoenix-42/action-logger/internal/service/model"
 )
 
 func (s *srvc) WatchActions(ctx context.Context) (<-chan *model.Action, error) {
-	log.Println("WatchActions started")
+	notifyChan, err := s.repo.ListenNotifications(ctx, "new_action")
+	if err != nil {
+		return nil, err
+	}
 
 	ch := make(chan *model.Action)
-
 	go func() {
 		defer close(ch)
 
-		for i := int64(1); i <= 3; i++ {
-			ch <- &model.Action{
-				ID: i,
-				Info: &model.ActionInfo{
-					UserID:     500 + i,
-					ActionType: model.ActionTypeBuy,
-					Timestamp:  time.Now(),
-					Details:    map[string]any{"demo": i},
-				},
+		for payload := range notifyChan {
+			var id int64
+			if _, err := fmt.Sscanf(payload, "%d", &id); err != nil {
+				continue
 			}
-			time.Sleep(500 * time.Millisecond)
-		}
 
-		log.Println("WatchActions ended")
+			action, err := s.repo.GetByID(ctx, id)
+			if err != nil || action == nil {
+				continue
+			}
+
+			ch <- action
+		}
 	}()
 
 	return ch, nil
