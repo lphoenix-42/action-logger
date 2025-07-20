@@ -12,6 +12,7 @@ import (
 	actionlogAPI "github.com/lphoenix-42/action-logger/internal/infrastructure/delivery/actionlog"
 	"github.com/lphoenix-42/action-logger/internal/infrastructure/repository"
 	actionlogRepositoryPg "github.com/lphoenix-42/action-logger/internal/infrastructure/repository/actionlog/pg"
+	notifierPg "github.com/lphoenix-42/action-logger/internal/infrastructure/repository/actionlog/pg/notifier"
 	"github.com/lphoenix-42/action-logger/internal/service"
 	actionlogService "github.com/lphoenix-42/action-logger/internal/service/actionlog"
 	"github.com/lphoenix-42/action-logger/pkg/closer"
@@ -27,6 +28,8 @@ type serviceProvider struct {
 	actionlogAPI        *actionlogAPI.Server
 	actionlogService    service.ActionlogService
 	actionlogRepository repository.ActionlogRepository
+
+	notifier repository.Notifier
 
 	pgConn *pgxpool.Pool
 }
@@ -53,10 +56,18 @@ func (s *serviceProvider) ActionlogService(ctx context.Context) service.Actionlo
 
 func (s *serviceProvider) ActionlogRepository(ctx context.Context) repository.ActionlogRepository {
 	if s.actionlogRepository == nil {
-		s.actionlogRepository = actionlogRepositoryPg.New(s.PGConn(ctx))
+		s.actionlogRepository = actionlogRepositoryPg.New(s.PGConn(ctx), s.Notifier(ctx))
 	}
 
 	return s.actionlogRepository
+}
+
+func (s *serviceProvider) Notifier(ctx context.Context) repository.Notifier {
+	if s.notifier == nil {
+		s.notifier = notifierPg.New(s.PGConn(ctx))
+	}
+
+	return s.notifier
 }
 
 func (s *serviceProvider) PGConn(ctx context.Context) *pgxpool.Pool {

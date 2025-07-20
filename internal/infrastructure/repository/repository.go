@@ -11,3 +11,8 @@ type ActionlogRepository interface {
 	ListenNotifications(ctx context.Context, channel string) (<-chan string, error)
 	QueryActions(ctx context.Context, req *model.ActionSearch) ([]*model.Action, error)
 }
+
+type Notifier interface {
+	Listen(ctx context.Context, channel string) (<-chan string, error)
+	Notify(ctx context.Context, channel, payload string) error
+}

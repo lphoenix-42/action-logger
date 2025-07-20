@@ -33,9 +33,7 @@ func (r *repo) InsertAction(ctx context.Context, info *model.ActionInfo) (int64,
 		return 0, err
 	}
 
-	notifyQuery := fmt.Sprintf("NOTIFY new_action, '%s'", fmt.Sprintf("%d", id))
-	_, err = r.db.Exec(ctx, notifyQuery)
-	if err != nil {
+	if err := r.notifier.Notify(ctx, "new_action", fmt.Sprintf("%d", id)); err != nil {
 		return 0, errors.Wrap(err, "inserted but failed to notify")
 	}
 
