@@ -44,6 +44,7 @@ func main() {
 	fmt.Printf("LogAction response: ID = %d\n", logRes.Msg.Id)
 
 	// --- 2. GetActions (stream, no filter)
+	counter := 0
 	fmt.Println("\nStreaming GetActions (no filter)...")
 	streamReq := connect.NewRequest(&actionlog_v1.GetActionsRequest{
 		DetailsFilters: []*actionlog_v1.JsonFilter{},
@@ -55,12 +56,15 @@ func main() {
 	for getStream.Receive() {
 		resp := getStream.Msg()
 		PrintAction(resp.Action)
+		counter++
 	}
 	if err := getStream.Err(); err != nil {
 		log.Fatalf("Stream receive error: %v", err)
 	}
+	fmt.Println("\nTotal: ", counter)
 
 	// --- 3. GetActions (stream, with filter)
+	counter = 0
 	filterId := int64(42)
 	fmt.Println("\nStreaming GetActions (with filter)...")
 	streamReq = connect.NewRequest(&actionlog_v1.GetActionsRequest{
@@ -83,10 +87,12 @@ func main() {
 	for getFilterStream.Receive() {
 		resp := getFilterStream.Msg()
 		PrintAction(resp.Action)
+		counter++
 	}
 	if err := getFilterStream.Err(); err != nil {
 		log.Fatalf("Stream receive error: %v", err)
 	}
+	fmt.Println("\nTotal: ", counter)
 
 	// --- 4. WatchActions (stream)
 	fmt.Println("\nStreaming WatchActions...")

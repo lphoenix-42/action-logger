@@ -29,7 +29,7 @@
 # Установка
 
 ```sh
-make get-deps
+cp .env.example .env
 make install-deps
 docker compose up
 make local-migration-up
@@ -42,10 +42,10 @@ go run cmd/server/main.go
 go run cmd/client/main.go
 ```
 
- Скрипт `client/main.go` запускает по очереди:
+ Скрипт [client/main.go](cmd/client/main.go) запускает по очереди:
  - LogAction
- - GetActions без фильтра (в результате 10 записей - 9 из миграции seed_user_actions и 1 которую только что записал LogAction)
- - GetActions с фильтром (из имеющихся под фильтр подпадают 3 записи из миграции, отмеченные в файле миграции комментариями)
+ - GetActions без фильтра (в результате 10 записей - 9 из миграции [seed_user_actions](migrations/20250720001325_seed_user_actions.sql) и 1 которую только что записал LogAction)
+ - GetActions с фильтром (из имеющихся под фильтр подпадают 3 записи из миграции, отмеченные в [файле миграции](migrations/20250720001325_seed_user_actions.sql) комментариями)
  - WatchActions
 
-Для проверки WatchActions можно запустить `action-logger/test/LogAction.http` , создаваемые записи будут выводиться в консоли
+Для проверки WatchActions можно запустить [LogAction.http](test/LogAction.http) , создаваемые записи будут выводиться в консоли
