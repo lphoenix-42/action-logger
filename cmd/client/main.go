@@ -43,29 +43,52 @@ func main() {
 	}
 	fmt.Printf("LogAction response: ID = %d\n", logRes.Msg.Id)
 
-	// --- 2. GetActions (stream)
-	fmt.Println("\nStreaming GetActions...")
+	// --- 2. GetActions (stream, no filter)
+	fmt.Println("\nStreaming GetActions (no filter)...")
 	streamReq := connect.NewRequest(&actionlog_v1.GetActionsRequest{
+		DetailsFilters: []*actionlog_v1.JsonFilter{},
+	})
+	getStream, err := client.GetActions(ctx, streamReq)
+	if err != nil {
+		log.Fatalf("GetActions error: %v", err)
+	}
+	for getStream.Receive() {
+		resp := getStream.Msg()
+		PrintAction(resp.Action)
+	}
+	if err := getStream.Err(); err != nil {
+		log.Fatalf("Stream receive error: %v", err)
+	}
+
+	// --- 3. GetActions (stream, with filter)
+	filterId := int64(42)
+	fmt.Println("\nStreaming GetActions (with filter)...")
+	streamReq = connect.NewRequest(&actionlog_v1.GetActionsRequest{
+		UserId: &filterId,
 		DetailsFilters: []*actionlog_v1.JsonFilter{
 			{
 				Path:  []string{"catalog", "item"},
 				Value: "Notebook",
 			},
+			{
+				Path:  []string{"discount"},
+				Value: "true",
+			},
 		},
 	})
-	stream, err := client.GetActions(ctx, streamReq)
+	getFilterStream, err := client.GetActions(ctx, streamReq)
 	if err != nil {
 		log.Fatalf("GetActions error: %v", err)
 	}
-	for stream.Receive() {
-		resp := stream.Msg()
+	for getFilterStream.Receive() {
+		resp := getFilterStream.Msg()
 		PrintAction(resp.Action)
 	}
-	if err := stream.Err(); err != nil {
+	if err := getFilterStream.Err(); err != nil {
 		log.Fatalf("Stream receive error: %v", err)
 	}
 
-	// --- 3. WatchActions (stream)
+	// --- 4. WatchActions (stream)
 	fmt.Println("\nStreaming WatchActions...")
 	watchStream, err := client.WatchActions(ctx, connect.NewRequest(&actionlog_v1.WatchActionsRequest{}))
 	if err != nil {

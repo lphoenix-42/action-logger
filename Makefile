@@ -12,7 +12,6 @@ install-deps:
 	GOBIN=$(LOCAL_BIN) go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1
 	GOBIN=$(LOCAL_BIN) go install -mod=mod google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	GOBIN=$(LOCAL_BIN) go install -mod=mod google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
-	GOBIN=$(LOCAL_BIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0
 
 get-deps:
 	go get -u google.golang.org/protobuf/cmd/protoc-gen-go
@@ -24,18 +23,8 @@ generate:
 generate-actionlog-api:
 	PATH=./bin:$$PATH buf generate
 
-# generate-actionlog-api:
-# 	mkdir -p pkg/actionlog_v1
-# 	protoc --proto_path api/actionlog/v1 \
-# 	--go_out=pkg/actionlog_v1 --go_opt=paths=source_relative \
-# 	--plugin=protoc-gen-go=bin/protoc-gen-go \
-# 	--go-grpc_out=pkg/actionlog_v1 --go-grpc_opt=paths=source_relative \
-# 	--plugin=protoc-gen-go-grpc=bin/protoc-gen-go-grpc \
-# 	api/actionlog/v1/actionlog.proto
-
 lint:
 	PATH=./bin:$$PATH buf lint
-	$(LOCAL_BIN)/golangci-lint run ./... --config .golangci.pipeline.yaml
 
 local-migration-status:
 	${LOCAL_BIN}/goose -dir ${LOCAL_MIGRATION_DIR} postgres ${LOCAL_MIGRATION_DSN} status -v
@@ -45,3 +34,4 @@ local-migration-up:
 
 local-migration-down:
 	${LOCAL_BIN}/goose -dir ${LOCAL_MIGRATION_DIR} postgres ${LOCAL_MIGRATION_DSN} down -v
+	

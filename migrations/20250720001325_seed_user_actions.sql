@@ -3,7 +3,13 @@
 insert into user_actions (user_id, action_type, timestamp, details) values
 (101, 1, NOW() - INTERVAL '1 day', '{"item": "Book", "price": 12.99}'),
 (102, 2, '2025-07-01 10:00:00+00', '{"item": "Pen", "reason": "Broken"}'),
-(103, 1, NOW() - INTERVAL '6 hours', '{"item": "Book", "discount": true}');
+(103, 1, NOW() - INTERVAL '6 hours', '{"catalog":{"item": "Notebook"},"discount": true}'),
+(42, 1, NOW() - INTERVAL '6 hours', '{"catalog":{"item": "Notebook"},"discount": true}'), -- suits default filter
+(42, 2, NOW() - INTERVAL '6 hours', '{"item": "Book", "discount": true}'),
+(42, 1, NOW() - INTERVAL '6 hours', '{"item": "Book", "discount": true}'),
+(42, 1, NOW() - INTERVAL '6 hours', '{"catalog":{"item": "Notebook"},"discount": true}'), -- suits default filter
+(42, 1, NOW() - INTERVAL '6 hours', '{"catalog":{"item": "Notebook"},"price": 12.99}'),
+(42, 2, NOW() - INTERVAL '6 hours', '{"catalog":{"item": "Notebook"},"discount": true}'); -- suits default filter
 -- +goose StatementEnd
 
 -- +goose Down
@@ -12,5 +18,7 @@ delete from user_actions
 where
     (user_id = 101 and action_type = 1) or
     (user_id = 102 and action_type = 2) or
-    (user_id = 103 and action_type = 1);
+    (user_id = 103 and action_type = 1) or
+    (user_id = 42 and action_type = 1) or
+    (user_id = 42 and action_type = 2);
 -- +goose StatementEnd
