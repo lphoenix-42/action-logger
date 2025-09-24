@@ -1,6 +1,6 @@
 @base=http://localhost:8080/actionlog.v1.ActionLogService
 
-### Запись события
+### Send action
 
 POST {{base}}/LogAction
 Content-Type: application/json

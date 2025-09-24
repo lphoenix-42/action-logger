@@ -8,11 +8,11 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 
 service ActionLogService {
-    // Запись события
+    // Log an action
     rpc LogAction(LogActionRequest) returns (LogActionResponse);
-    // Получение событий с фильтрацией (потоковая выдача)
+    // Retrieve actions with filtering (streaming output)
     rpc GetActions(GetActionsRequest) returns (stream GetActionsResponse);
-    // Мониторинг новых событий в реальном времени
+    // Monitor new actions in real time
     rpc WatchActions(WatchActionsRequest) returns (stream WatchActionsResponse);
 }
 

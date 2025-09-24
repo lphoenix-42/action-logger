@@ -1,32 +1,34 @@
 # ActionLogger
 
-Система мониторинга пользовательских действий
+User activity monitoring system
 
-Задача: Реализовать gRPC API для системы логов пользовательских действий с возможностью фильтрации и потоковой выдачи данных.
+Goal: Implement a gRPC API for a user activity logging system with filtering and streaming support.
 
-Требования:
+Requirements:
 
-1. Сервис на Connect:  
-Создать proto-файл с описанием сервиса ActionLogger Реализовать сервер с использованием connect-go
+1. Service using Connect RPC:
+Create a proto file describing the ActionLogger service.
+Implement the server using connect-go.
 
 2. PostgreSQL + pgx:  
-Создать таблицу user_actions : id, user_id, action_type, timestamp, details (JSONB) Использовать pgx v5 для работы с БД
+Create a `user_actions` table: id, user_id, action_type, timestamp, details (JSONB).  
+Use pgx v5 to work with the database.
 
-3. Фильтрация:  
-Реализовать суммарные запросы с комбинацией фильтров:
-- по user_id  
-- по action_type  
-- временной диапазон
-- поиск по details (JSONB поле)
+3. Filtering:  
+Implement aggregate queries with a combination of filters:
+- by user_id  
+- by action_type  
+- by time range  
+- search by details (JSONB field)
 
-4. Потоковая выдача:  
-- Для GetActions использовать server-side streaming
-- Лимитировать выдачу пачками по 100 записей
+4. Streaming output:  
+- For GetActions use server-side streaming  
+- Limit output in batches of 100 records
 
-5. Мониторинг:  
-- WatchActions должен отслеживать новые события (использовать LISTEN/NOTIFY PostgreSQL)
+5. Monitoring:  
+- WatchActions must track new events (use PostgreSQL LISTEN/NOTIFY)
 
-# Установка
+# Installation
 
 ```sh
 cp .env.example .env
@@ -35,17 +37,17 @@ docker compose up
 make local-migration-up
 ```
 
-# Проверка
+# Testing
 
 ```sh
 go run cmd/server/main.go
 go run cmd/client/main.go
 ```
 
- Скрипт [client/main.go](cmd/client/main.go) запускает по очереди:
+ The [client/main.go](cmd/client/main.go) script runs sequentially:
  - LogAction
- - GetActions без фильтра (в результате 10 записей - 9 из миграции [seed_user_actions](migrations/20250720001325_seed_user_actions.sql) и 1 которую только что записал LogAction)
- - GetActions с фильтром (из имеющихся под фильтр подпадают 3 записи из миграции, отмеченные в [файле миграции](migrations/20250720001325_seed_user_actions.sql) комментариями)
+ - GetActions without filter (result: 10 records – 9 from migration [seed_user_actions](migrations/20250720001325_seed_user_actions.sql) and 1 logged by LogAction just now)
+ - GetActions with filter (3 records from the migration match the filter, marked with comments in the [migration file](migrations/20250720001325_seed_user_actions.sql))
  - WatchActions
 
-Для проверки WatchActions можно запустить [LogAction.http](test/LogAction.http) , создаваемые записи будут выводиться в консоли
+To test WatchActions run [LogAction.http](test/LogAction.http). Newly created records will be printed to the console.
