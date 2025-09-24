@@ -12,7 +12,7 @@ func (s *srvc) GetActions(ctx context.Context, req *model.ActionSearch) (<-chan 
 		return nil, err
 	}
 
-	ch := make(chan *model.Action, len(actions))
+	ch := make(chan *model.Action)
 	go func() {
 		defer close(ch)
 		count := 0
@@ -20,7 +20,13 @@ func (s *srvc) GetActions(ctx context.Context, req *model.ActionSearch) (<-chan 
 			if count >= 100 {
 				break
 			}
-			ch <- action
+
+			select {
+			case <-ctx.Done():
+				return
+			case ch <- action:
+			}
+
 			count++
 		}
 	}()
